@@ -7,6 +7,6 @@ Telegram bot frontend for toggling koi-fish algos and managing allocations.
 2. `npm run dev` (or `npm run start` in prod).
 
 ## Env
-- `TELEGRAM_BOT_TOKEN` — Bot token from @ BotFather on telegram
+- `TELEGRAM_BOT_TOKEN` — Bot token from [BotFather](https://t.me/botfather) on Telegram
 
 
