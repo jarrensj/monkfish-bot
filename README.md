@@ -8,5 +8,5 @@ Telegram bot frontend for toggling koi-fish algos and managing allocations.
 
 ## Env
 - `TELEGRAM_BOT_TOKEN` — Bot token from [BotFather](https://t.me/botfather) on Telegram
-
+- `KOI_API_URL`   -  koi-fish API base URL (can be mocked)
 
