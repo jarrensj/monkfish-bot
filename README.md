@@ -1,6 +1,6 @@
 # monkfish-bot
 
-Telegram bot frontend for toggling koi-fish algos and managing allocations.
+Telegram bot for toggling koi-fish algos and managing allocations.
 
 ## Quick Start
 1. `cp .env.example .env` and set `TELEGRAM_BOT_TOKEN`.
