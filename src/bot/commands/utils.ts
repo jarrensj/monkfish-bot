@@ -30,16 +30,6 @@ export function logErr(label: string, err: unknown, meta: LogMeta = {}): void {
     JSON.stringify({
       level: "error",
       label,
-<<<<<<< HEAD
-      message,
-      stack,
-      meta,
-      ts: new Date().toISOString(),
-      env: process.env.NODE_ENV || "development",
-    })
-  );
-}
-=======
       name: e.name,
       message: e.message,
       stack: e.stack,
@@ -49,4 +39,3 @@ export function logErr(label: string, err: unknown, meta: LogMeta = {}): void {
     })
   );
 }
->>>>>>> main
