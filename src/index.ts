@@ -12,6 +12,7 @@ if (!loggingWebhookUrl) {
   console.error('Missing LOGGING_WEBHOOK_URL in .env');
   process.exit(1);
 }
+const LOGGING_WEBHOOK_URL: string = loggingWebhookUrl;
 
 const bot = new Telegraf(token);
 
@@ -20,7 +21,7 @@ async function logToWebhook(type: 'incoming' | 'outgoing', userId?: number, user
   try {
     const emoji = type === 'incoming' ? '📨' : '📤';
     const title = type === 'incoming' ? 'Message Received' : 'Bot Response';
-    await fetch(loggingWebhookUrl, {
+    await fetch(LOGGING_WEBHOOK_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
