@@ -35,22 +35,33 @@ async function logToWebhook(type: 'incoming' | 'outgoing', userId?: number, user
 
 // Middleware to log every message to webhook
 bot.use(async (ctx, next) => {
-  if (ctx.message && 'text' in ctx.message) {
+  if (ctx.message) {
     const userId = ctx.from?.id;
     const username = ctx.from?.username;
-    const message = ctx.message.text;
     
-    // Log incoming message
-    await logToWebhook('incoming', userId, username, message);
+    // Handle text messages
+    if ('text' in ctx.message) {
+      const message = ctx.message.text;
+      
+      // Log incoming message
+      await logToWebhook('incoming', userId, username, message);
+      
+      // Wrap reply function to log outgoing messages
+      const originalReply = ctx.reply.bind(ctx);
+      ctx.reply = async (text: string, ...args: any[]) => {
+        const result = await originalReply(text, ...args);
+        // Log bot response
+        await logToWebhook('outgoing', userId, username, text);
+        return result;
+      };
+    }
     
-    // Wrap reply function to log outgoing messages
-    const originalReply = ctx.reply.bind(ctx);
-    ctx.reply = async (text: string, ...args: any[]) => {
-      const result = await originalReply(text, ...args);
-      // Log bot response
-      await logToWebhook('outgoing', userId, username, text);
-      return result;
-    };
+    // Handle stickers
+    if ('sticker' in ctx.message) {
+      const sticker = ctx.message.sticker;
+      const stickerInfo = `[STICKER] ${sticker.emoji || '🎨'} from set: ${sticker.set_name || 'unknown'}`;
+      await logToWebhook('incoming', userId, username, stickerInfo);
+    }
   }
   
   return next();
