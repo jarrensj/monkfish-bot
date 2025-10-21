@@ -1,0 +1,16 @@
+# .github/CODEOWNERS
+
+
+# Default owners for everything
+* @jarrensj @prkcder @kylemacabasco @jsantibout @kadhirash
+
+cat > .github/CODEOWNERS << 'EOF'
+# .github/CODEOWNERS
+
+
+# Default owners for everything
+* @jarrensj @prkcder @kylemacabasco @jsantibout @kadhirash
+
+
+
+
