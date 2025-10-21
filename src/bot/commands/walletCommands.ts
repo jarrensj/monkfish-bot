@@ -1,10 +1,12 @@
 // Wallet-related bot commands (start, deposit, balance)
-import type { Context } from "telegraf";
-import { logErr } from "./utils.ts"
+import type { Telegraf, Context } from "telegraf";
+import { logErr } from "./utils"
 import type { IWalletService } from "../../core/services/wallet/types";
-import { keyValue } from "../../infra/keyValue.ts";
+import { keyValue } from "../../infra/keyValue";
 
-export function registerWalletCommands(bot: any, wallet: IWalletService) {
+type Bot = Telegraf<Context>;
+
+export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     // Initial /start command - show welcome and ToS
     bot.start(async (ctx: Context) => {
         const tg = String(ctx.from!.id);

@@ -1,33 +1,41 @@
 // Utility bot commands (ping, echo, etc.)
-import type { Context } from "telegraf";
+import type { Telegraf, Context } from "telegraf";
+// If this import errors in your version, see note below to switch to 'typegram'.
+import type { Message } from "telegraf/types";
 
-export function registerUtilCommands(bot: any) {
-  // Health check command
-  bot.command("ping", (ctx: Context) => ctx.reply("pong"));
+type Bot = Telegraf<Context>;
 
-  // Simple echo command for testing
-  bot.command("echo", (ctx: Context) => {
-    const text = (ctx.message as any).text?.split(" ").slice(1).join(" ") || "…";
-    return ctx.reply(text);
+export function registerUtilCommands(bot: Bot) {
+  // Health check
+  bot.command("ping", (ctx) => ctx.reply("pong"));
+
+  // Echo (type-safe, no `any`, no NarrowedContext)
+  bot.command("echo", (ctx) => {
+    if (!isTextMessage(ctx)) return; // ignore non-text updates
+    const [, ...rest] = ctx.message.text.trim().split(/\s+/);
+    return ctx.reply(rest.join(" ") || "…");
   });
+}
+
+/** Narrows ctx.message to a TextMessage so we can safely read ctx.message.text */
+function isTextMessage(ctx: Context): ctx is Context & { message: Message.TextMessage } {
+  return ctx.updateType === "message" && !!ctx.message && "text" in ctx.message;
 }
 
 export type LogMeta = Record<string, unknown>;
 
 export function logErr(label: string, err: unknown, meta: LogMeta = {}): void {
-  const isError = err instanceof Error;
-  const message = isError ? err.message : String(err);
-  const stack = isError ? err.stack : undefined;
-
+  const e = err instanceof Error ? err : new Error(String(err));
   console.error(
     JSON.stringify({
       level: "error",
       label,
-      message,
-      stack,
+      name: e.name,
+      message: e.message,
+      stack: e.stack,
       meta,
       ts: new Date().toISOString(),
-      env: process.env.NODE_ENV || "development",
+      env: process.env.NODE_ENV ?? "development",
     })
   );
 }
