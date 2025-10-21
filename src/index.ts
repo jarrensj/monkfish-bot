@@ -38,13 +38,11 @@ bot.use(async (ctx, next) => {
   if (ctx.message) {
     const userId = ctx.from?.id;
     const username = ctx.from?.username;
+    let messageInfo: string | null = null;
     
     // Handle text messages
     if ('text' in ctx.message) {
-      const message = ctx.message.text;
-      
-      // Log incoming message
-      await logToWebhook('incoming', userId, username, message);
+      messageInfo = ctx.message.text;
       
       // Wrap reply function to log outgoing messages
       const originalReply = ctx.reply.bind(ctx);
@@ -55,12 +53,76 @@ bot.use(async (ctx, next) => {
         return result;
       };
     }
-    
     // Handle stickers
-    if ('sticker' in ctx.message) {
+    else if ('sticker' in ctx.message) {
       const sticker = ctx.message.sticker;
-      const stickerInfo = `[STICKER] ${sticker.emoji || '🎨'} from set: ${sticker.set_name || 'unknown'}`;
-      await logToWebhook('incoming', userId, username, stickerInfo);
+      messageInfo = `[STICKER] ${sticker.emoji || '🎨'} from set: ${sticker.set_name || 'unknown'}`;
+    }
+    // Handle animations (GIFs)
+    else if ('animation' in ctx.message) {
+      const animation = ctx.message.animation;
+      messageInfo = `[GIF] ${animation.file_name || 'animation'} (${animation.width}x${animation.height}, ${Math.round(animation.file_size! / 1024)}KB)`;
+    }
+    // Handle photos
+    else if ('photo' in ctx.message) {
+      const photo = ctx.message.photo[ctx.message.photo.length - 1]; // Get highest resolution
+      const caption = ctx.message.caption ? ` - Caption: ${ctx.message.caption}` : '';
+      messageInfo = `[PHOTO] ${photo.width}x${photo.height} (${Math.round(photo.file_size! / 1024)}KB)${caption}`;
+    }
+    // Handle videos
+    else if ('video' in ctx.message) {
+      const video = ctx.message.video;
+      const caption = ctx.message.caption ? ` - Caption: ${ctx.message.caption}` : '';
+      messageInfo = `[VIDEO] ${video.file_name || 'video'} (${video.width}x${video.height}, ${video.duration}s, ${Math.round(video.file_size! / 1024)}KB)${caption}`;
+    }
+    // Handle video notes (circular videos)
+    else if ('video_note' in ctx.message) {
+      const videoNote = ctx.message.video_note;
+      messageInfo = `[VIDEO NOTE] ${videoNote.duration}s (${Math.round(videoNote.file_size! / 1024)}KB)`;
+    }
+    // Handle voice messages
+    else if ('voice' in ctx.message) {
+      const voice = ctx.message.voice;
+      messageInfo = `[VOICE] ${voice.duration}s (${Math.round(voice.file_size! / 1024)}KB)`;
+    }
+    // Handle audio files
+    else if ('audio' in ctx.message) {
+      const audio = ctx.message.audio;
+      const title = audio.title || audio.file_name || 'audio';
+      const performer = audio.performer ? ` by ${audio.performer}` : '';
+      messageInfo = `[AUDIO] ${title}${performer} (${audio.duration}s, ${Math.round(audio.file_size! / 1024)}KB)`;
+    }
+    // Handle documents
+    else if ('document' in ctx.message) {
+      const document = ctx.message.document;
+      const caption = ctx.message.caption ? ` - Caption: ${ctx.message.caption}` : '';
+      messageInfo = `[DOCUMENT] ${document.file_name || 'file'} (${Math.round(document.file_size! / 1024)}KB)${caption}`;
+    }
+    // Handle locations
+    else if ('location' in ctx.message) {
+      const location = ctx.message.location;
+      messageInfo = `[LOCATION] Lat: ${location.latitude}, Lon: ${location.longitude}`;
+    }
+    // Handle contacts
+    else if ('contact' in ctx.message) {
+      const contact = ctx.message.contact;
+      messageInfo = `[CONTACT] ${contact.first_name} ${contact.last_name || ''} - ${contact.phone_number}`;
+    }
+    // Handle polls
+    else if ('poll' in ctx.message) {
+      const poll = ctx.message.poll;
+      const options = poll.options.map(o => o.text).join(', ');
+      messageInfo = `[POLL] ${poll.question} - Options: ${options}`;
+    }
+    // Handle dice
+    else if ('dice' in ctx.message) {
+      const dice = ctx.message.dice;
+      messageInfo = `[DICE] ${dice.emoji} rolled ${dice.value}`;
+    }
+    
+    // Log the message if we captured any info
+    if (messageInfo) {
+      await logToWebhook('incoming', userId, username, messageInfo);
     }
   }
   
