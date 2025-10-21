@@ -1,7 +1,7 @@
 // Local development wallet service - generates and persists ed25519 keypairs per user
 
-import { keyValue } from "../../../infra/keyValue.ts";
-import { getSolBalance } from "../../../infra/solana.ts";
+import { keyValue } from "../../../infra/keyValue";
+import { getSolBalance } from "../../../infra/solana";
 import type { IWalletService, WalletRef, Balances } from "./types";
 
 // Telegram user IDs are numeric. Allow 5–20 digits to be safe across environments

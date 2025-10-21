@@ -3,8 +3,8 @@
 import "dotenv/config";
 import { Telegraf } from "telegraf";
 import { makeWalletService } from "../core/services/wallet";
-import { registerWalletCommands } from "./commands/walletCommands.ts";
-import { registerUtilCommands } from "./commands/utils.ts";
+import { registerWalletCommands } from "./commands/walletCommands";
+import { registerUtilCommands } from "./commands/utils";
 
 // Verify bot token is configured
 const token = process.env.TELEGRAM_BOT_TOKEN;
