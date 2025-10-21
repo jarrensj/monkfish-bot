@@ -1,4 +1,0 @@
-# .github/CODEOWNERS
-
-# All files owned by the entire team
-* @jarrensj @prkcder @kylemacabasco @jsantibout @kadhirash
