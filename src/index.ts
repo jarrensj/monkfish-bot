@@ -7,8 +7,8 @@ if (!token) {
   process.exit(1);
 }
 
-const webhookUrl = process.env.LOGGING_WEBHOOK_URL;
-if (!webhookUrl) {
+const loggingWebhookUrl = process.env.LOGGING_WEBHOOK_URL;
+if (!loggingWebhookUrl) {
   console.error('Missing LOGGING_WEBHOOK_URL in .env');
   process.exit(1);
 }
@@ -20,7 +20,7 @@ async function logToWebhook(type: 'incoming' | 'outgoing', userId?: number, user
   try {
     const emoji = type === 'incoming' ? '📨' : '📤';
     const title = type === 'incoming' ? 'Message Received' : 'Bot Response';
-    await fetch(webhookUrl, {
+    await fetch(loggingWebhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
