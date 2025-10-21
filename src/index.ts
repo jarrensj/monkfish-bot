@@ -7,9 +7,9 @@ if (!token) {
   process.exit(1);
 }
 
-const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+const webhookUrl = process.env.LOGGING_WEBHOOK_URL;
 if (!webhookUrl) {
-  console.error('Missing DISCORD_WEBHOOK_URL in .env');
+  console.error('Missing LOGGING_WEBHOOK_URL in .env');
   process.exit(1);
 }
 
