@@ -4,10 +4,26 @@ import { keyValue } from "../../../infra/keyValue.ts";
 import { getSolBalance } from "../../../infra/solana.ts";
 import type { IWalletService, WalletRef, Balances } from "./types";
 
+// Telegram user IDs are numeric. Allow 5–20 digits to be safe across environments
+const TELEGRAM_ID_REGEX = /^\d{5,20}$/;
+
+// Returns true if `id` is a digits-only string of reasonable length
+function validateTelegramId(id: unknown): id is string {
+  return typeof id === "string" && TELEGRAM_ID_REGEX.test(id);
+}
+
+// Throws if the id is invalid; narrows the type for TS
+function assertTelegramId(id: unknown): asserts id is string {
+  if (!validateTelegramId(id)) {
+    throw new Error("Invalid telegramId: expected a digits-only string (5–20 chars).");
+  }
+}
 
 export class LocalDevWalletService implements IWalletService {
   // Generate a fake but deterministic Solana-like address for the user
   async getOrCreateUserWallet(telegramId: string): Promise<WalletRef> {
+    assertTelegramId(telegramId);
+
     let walletId = keyValue.get<string>(`user:${telegramId}:walletId`);
     
     if (!walletId) {

@@ -11,3 +11,23 @@ export function registerUtilCommands(bot: any) {
     return ctx.reply(text);
   });
 }
+
+export type LogMeta = Record<string, unknown>;
+
+export function logErr(label: string, err: unknown, meta: LogMeta = {}): void {
+  const isError = err instanceof Error;
+  const message = isError ? err.message : String(err);
+  const stack = isError ? err.stack : undefined;
+
+  console.error(
+    JSON.stringify({
+      level: "error",
+      label,
+      message,
+      stack,
+      meta,
+      ts: new Date().toISOString(),
+      env: process.env.NODE_ENV || "development",
+    })
+  );
+}

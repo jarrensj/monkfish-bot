@@ -4,26 +4,45 @@ import path from "node:path";
 
 // Simple file-backed key-value store for persisting wallet data across restarts
 
-const DIR = ".data";
-const FILE = process.env.KeyValue_PATH || path.join(DIR, "keyValue.json");
+const DATA_DIR = process.env.KEYVALUE_DIR
+  ? path.resolve(process.env.KEYVALUE_DIR)
+  : path.resolve(".data");
+
+const FILE = process.env.KEYVALUE_PATH
+  ? path.resolve(process.env.KEYVALUE_PATH)
+  : path.join(DATA_DIR, "keyValue.json");
+
 
 type KeyValue = Record<string, unknown>;
+
+try {
+  fs.mkdirSync(path.dirname(FILE), { recursive: true });
+} catch (err) {
+  console.error("[keyValue] mkdir failed:", err, { dir: path.dirname(FILE) });
+}
 
 // Load existing data from disk on startup
 let cache: KeyValue = {};
 if (fs.existsSync(FILE)) {
     try {
         cache = JSON.parse(fs.readFileSync(FILE, "utf8")) as KeyValue;
-    } catch {
+    } catch (err) {
+        console.error("[keyValue] Failed to read/parse store; starting empty:", err, { file: FILE });
         cache = {};
     }
 }
 
 // Write current cache to disk
 function persist() {
-    fs.mkdirSync(path.dirname(FILE), { recursive: true });
-    fs.writeFileSync(FILE, JSON.stringify(cache, null, 2), "utf8");
+  try {
+    const tmp = FILE + ".tmp";
+    fs.writeFileSync(tmp, JSON.stringify(cache, null, 2), "utf8");
+    fs.renameSync(tmp, FILE);
+  } catch (err) {
+    console.error("[keyValue] persist failed:", err, { file: FILE });
+  }
 }
+
 
 export const keyValue = {
     // Retrieve a value by key, with optional fallback
