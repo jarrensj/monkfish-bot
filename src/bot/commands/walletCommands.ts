@@ -6,6 +6,9 @@ import { keyValue } from "../../infra/keyValue";
 
 type Bot = Telegraf<Context>;
 
+// Current Terms of Service version
+const CURRENT_TOS_VERSION = "1.0";
+
 export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     // Initial /start command - show welcome and ToS
     bot.start(async (ctx: Context) => {
@@ -38,7 +41,15 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     // User agrees to ToS
     bot.command("agree", async (ctx: Context) => {
         const tg = String(ctx.from!.id);
+        const agreedAt = new Date().toISOString();
+        
+        // TODO: Migrate to DB - Store as single user record with ToS fields
+        // Instead of 3 separate KV entries, should be:
+        // Users table: { telegram_id, tos_agreed, tos_version, tos_agreed_at, created_at, updated_at }
         keyValue.set(`user:${tg}:tos_agreed`, true);
+        keyValue.set(`user:${tg}:tos_version`, CURRENT_TOS_VERSION);
+        keyValue.set(`user:${tg}:tos_agreed_at`, agreedAt);
+        
         await ctx.reply(
             "✅ Terms accepted!\n\n" +
             "Now use /start_wallet to create your wallet."
