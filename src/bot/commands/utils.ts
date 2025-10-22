@@ -1,8 +1,11 @@
+// src/bot/utils.ts
 import type { Telegraf, Context } from "telegraf";
 import type { Message } from "telegraf/types";
 
 
 type Bot = Telegraf<Context>;
+
+/* ========= Basic util commands (unchanged) ========= */
 
 export function registerUtilCommands(bot: Bot) {
   bot.command("ping", (ctx) => ctx.reply("pong"));
