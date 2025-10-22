@@ -1,2 +1,2 @@
 // Entry point - starts the bot
-import "./bot/index";
+import "./bot/index.js";
