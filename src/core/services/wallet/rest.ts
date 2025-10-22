@@ -1,9 +1,8 @@
-//  adapter Swap HTTP adapter implementing your existing ISwapService
-
-// src/core/services/wallet/rest.ts
 import type { IWalletService, WalletRef, Balances } from "./types";
 import { apiRequest } from "../../../infra/api";
 
+
+//  adapter Swap HTTP adapter implementing your existing ISwapService
 export class RestWalletService implements IWalletService {
   constructor(private baseUrl: string) {
     if (!/^https:\/\//i.test(baseUrl)) throw new Error("KOI_API_URL must be HTTPS");

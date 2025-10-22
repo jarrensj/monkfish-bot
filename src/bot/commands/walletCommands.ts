@@ -2,13 +2,17 @@
 import type { Telegraf, Context } from "telegraf";
 import { logErr } from "./utils"
 import type { IWalletService } from "../../core/services/wallet/types";
-import { keyValue } from "../../infra/keyValue";
+import { keyValue } from "../../infra/keyValueLocal";
 
 type Bot = Telegraf<Context>;
 
 // Current Terms of Service version
 const CURRENT_TOS_VERSION = "1.0.0-beta";
 
+
+// TODO: Migrate to DB with proper wallet storage
+// Wallets table: { id, user_id (FK to Users), address, private_key_encrypted, created_at }
+// This allows proper relational queries, transactions, and secure key storage
 export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     // Helper function to check if user needs to accept/re-accept ToS
     function needsTosAcceptance(tg: string): boolean {

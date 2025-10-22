@@ -99,14 +99,14 @@ export function registerSwapCommands(bot: Telegraf) {
   });
   
 
+  //  TODO: connect to Backend
   /**
    * /swap command - Execute a token swap
    * 
-   * Usage: /swap <tokenSymbolOrMint> <amountSOL>
-   * Example: /swap USDC 0.5
-   * 
+   *
    * Immediately executes the swap (mock) and returns a transaction ID.
    * Future enhancement: Add inline confirmation/cancel buttons (PR5).
+   * 
    */
   bot.command("swap", async (ctx) => {
     try {
@@ -146,6 +146,7 @@ export function registerSwapCommands(bot: Telegraf) {
     }
   });
 
+  //  TODO: connect to Backend
   /**
    * Paste-to-swap helper - Auto-detect token symbols/addresses
    * 

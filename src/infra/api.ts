@@ -1,6 +1,4 @@
-
 // helper Wallet HTTP adapter implementing your existing IWalletService
-// src/infra/api.ts
 const DEFAULT_TIMEOUT_MS = Number(process.env.HTTP_TIMEOUT_MS ?? 8000);
 
 export class HttpError extends Error {
