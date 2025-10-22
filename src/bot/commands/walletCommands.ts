@@ -10,13 +10,23 @@ type Bot = Telegraf<Context>;
 const CURRENT_TOS_VERSION = "1.0";
 
 export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
+    // Helper function to check if user needs to accept/re-accept ToS
+    function needsToSAcceptance(tg: string): boolean {
+        const hasAgreed = keyValue.get<boolean>(`user:${tg}:tos_agreed`, false);
+        if (!hasAgreed) return true;
+        
+        // Check if user's ToS version matches current version
+        const userTosVersion = keyValue.get<string>(`user:${tg}:tos_version`);
+        return userTosVersion !== CURRENT_TOS_VERSION;
+    }
+
     // Initial /start command - show welcome and ToS
     bot.start(async (ctx: Context) => {
         const tg = String(ctx.from!.id);
-        const hasAgreed = keyValue.get<boolean>(`user:${tg}:tos_agreed`, false);
+        const needsAcceptance = needsToSAcceptance(tg);
 
-        if (hasAgreed) {
-            // User already agreed, show main menu
+        if (!needsAcceptance) {
+            // User already agreed to current ToS version, show main menu
             await ctx.reply(
                 "Welcome back to Monkfish 🐟\n\n" +
                 "Commands:\n" +
@@ -25,9 +35,16 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
                 "• /balance - Check your balance"
             );
         } else {
-            // First time user - show ToS
+            // First time user or ToS version updated - show ToS
+            const userTosVersion = keyValue.get<string>(`user:${tg}:tos_version`);
+            const isUpdate = userTosVersion && userTosVersion !== CURRENT_TOS_VERSION;
+            
+            const greeting = isUpdate 
+                ? "📋 Our Terms of Service have been updated!\n\n"
+                : "Welcome to Monkfish 🐟\n\n";
+            
             await ctx.reply(
-                "Welcome to Monkfish 🐟\n\n" +
+                greeting +
                 "Before you begin, please review our Terms of Service:\n\n" +
                 "• This is a non-custodial wallet bot\n" +
                 "• You are responsible for your funds\n" +
@@ -65,10 +82,9 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     bot.command("start_wallet", async (ctx: Context) => {
         try {
             const tg = String(ctx.from!.id);
-            const hasAgreed = keyValue.get<boolean>(`user:${tg}:tos_agreed`, false);
 
-            if (!hasAgreed) {
-                await ctx.reply("Please accept Terms of Service first. Use /start to begin.");
+            if (needsToSAcceptance(tg)) {
+                await ctx.reply("Please accept the current Terms of Service first. Use /start to begin.");
                 return;
             }
 
@@ -92,10 +108,9 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     bot.command("deposit", async (ctx: Context) => {
         try {
             const tg = String(ctx.from!.id);
-            const hasAgreed = keyValue.get<boolean>(`user:${tg}:tos_agreed`, false);
 
-            if (!hasAgreed) {
-                await ctx.reply("Please accept Terms of Service first. Use /start to begin.");
+            if (needsToSAcceptance(tg)) {
+                await ctx.reply("Please accept the current Terms of Service first. Use /start to begin.");
                 return;
             }
 
@@ -111,10 +126,9 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     bot.command("balance", async (ctx: Context) => {
         try {
             const tg = String(ctx.from!.id);
-            const hasAgreed = keyValue.get<boolean>(`user:${tg}:tos_agreed`, false);
 
-            if (!hasAgreed) {
-                await ctx.reply("Please accept Terms of Service first. Use /start to begin.");
+            if (needsToSAcceptance(tg)) {
+                await ctx.reply("Please accept the current Terms of Service first. Use /start to begin.");
                 return;
             }
 

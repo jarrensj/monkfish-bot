@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 // TODO: Migrate to proper database 
-
 const DATA_DIR = process.env.KEYVALUE_DIR
   ? path.resolve(process.env.KEYVALUE_DIR)
   : path.resolve(".data");
