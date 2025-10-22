@@ -1,0 +1,125 @@
+
+
+so i was following this plan and there is one thing i want to fix:
+Great—let’s keep PR3 laser-focused on **plain swaps** and make sure it fits your current structure (with `registerWalletCommands`, `registerUtilCommands`, and `loggingMiddleware` already in place).
+
+Quick answers up front:
+
+* **Don’t delete `mock.ts`.** It isn’t “tests”; it’s your temporary implementation so swaps work **before** the backend is wired. We’ll swap it out later with a real Jupiter/HTTP adapter behind the same interface.
+* We’ll avoid anything PnL-related so we don’t step on your teammate’s work.
+
+Here’s exactly what to add/change for PR3.
+
+---
+
+# PR3 – Plain Swaps (bot-only, backend-agnostic)
+
+## New files to add
+
+### 1) Swap service (core)
+
+* `src/core/services/swap/types.ts`
+  Defines `ISwapService`, `QuoteInput`, `QuoteResult`.
+
+* `src/core/services/swap/mock.ts`
+  Temporary implementation that:
+
+  * resolves token by symbol or mint (USDC/USDT/BONK + mints),
+  * returns a **mock quote** (e.g., assume 1 SOL ≈ 100 USDC),
+  * returns a **mock tx id** for `/swap`.
+
+* `src/core/services/swap/index.ts`
+  Tiny factory: today returns `MockSwapService`; later you’ll switch to a real Jupiter/HTTP client with an env flag without touching commands.
+
+### 2) Swap commands (bot)
+
+* `src/bot/commands/swapCommands.ts`
+  Registers:
+
+  * `/quote <mintOrSymbol> <amountSOL>`
+  * `/swap <mintOrSymbol> <amountSOL>`
+  * **Paste-to-swap helper**: when a user sends a single token symbol/mint (not a command), reply with quick suggestions (`/quote TOKEN 0.5`, `/swap TOKEN 0.5`).
+
+> These commands should **use your existing wallet service** from PR1 to ensure a wallet exists, but don’t perform real on-chain actions yet.
+
+---
+
+## File to update
+
+### 3) Wire commands into bot bootstrap
+
+* `src/bot/index.ts`
+
+  * Import and call `registerSwapCommands(bot)` **after** middleware registration and alongside your other `register…` calls.
+  * Nothing else in this file needs to change.
+
+---
+
+## Folder map (after PR3)
+
+```
+src/
+  bot/
+    index.ts
+    commands/
+      utils.ts                 (existing)
+      walletCommands.ts        (existing)
+      swapCommands.ts          (NEW)
+    middleware/
+      logging.ts               (existing)
+      (rateLimit/errors from PR2 live here later)
+  core/
+    services/
+      wallet/
+        ...                    (from PR1)
+      swap/
+        index.ts               (NEW)
+        mock.ts                (NEW)
+        types.ts               (NEW)
+```
+
+---
+
+## Minimal behaviors (what reviewers should test)
+
+1. `/quote USDC 0.5`
+
+   * Bot replies with a **mock estimate** (spend 0.5 SOL; get ~50 USDC) and a hint to run `/swap`.
+
+2. `/swap USDC 0.5`
+
+   * Bot replies with a **mock tx id** like `SIM-abc123`.
+   * Invalid inputs (missing/negative amount, unknown token) give a clear, friendly message.
+
+3. Paste `USDC` (or a valid mint) by itself
+
+   * Bot suggests `/quote USDC 0.5` and `/swap USDC 0.5`.
+
+4. Works alongside your existing commands
+
+   * `/start`, `/deposit`, `/balance` still behave as before.
+   * Logging middleware continues to mirror inbound/outbound messages to Discord if `LOGGING_WEBHOOK_URL` is set.
+
+---
+
+## Notes for future integration (no action now)
+
+* When the backend (koi-fish) exposes a swap endpoint or you adopt Jupiter client:
+
+  * Implement a `JupiterSwapService` (or HTTP adapter) and switch the factory in `src/core/services/swap/index.ts` based on an env like `SWAP_PROVIDER=jupiter`.
+  * **No changes** to `/quote` and `/swap` command code—only the service factory changes.
+
+* Your teammate’s `/pnl wallet <tokenAddress>` can reuse the **token resolver** logic in `swap/mock.ts` (or you can pull that small registry into `src/core/tokens/registry.ts` later). For PR3, we’ll keep it inside the mock service to avoid creating placeholders they’re not ready to consume.
+
+---
+
+## Optional (nice tiny add, still PR3-safe)
+
+* Input validation polish (reject amounts > your current SOL balance with a helpful note—if you want to read balance here).
+* Add a one-line footer to `/quote` reminding “This is a mock estimate (no backend yet).”
+
+---
+
+If you want, I can drop in concise code for those three new files (`types.ts`, `mock.ts`, `swapCommands.ts`) exactly matching your project style so you can paste and run.
+
+
