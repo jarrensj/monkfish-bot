@@ -6,6 +6,8 @@ import { makeWalletService } from "../core/services/wallet";
 import { registerWalletCommands } from "./commands/walletCommands";
 import { registerUtilCommands } from "./commands/utils";
 import { loggingMiddleware } from "./middleware/logging";
+import { registerSwapCommands } from "./commands/swapCommands";
+
 
 // Verify bot token is configured
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -32,6 +34,7 @@ bot.use(loggingMiddleware());
 // Register all command groups
 registerUtilCommands(bot);
 registerWalletCommands(bot, wallet);
+registerSwapCommands(bot);
 
 // Start bot and setup graceful shutdown
 bot.launch().then(() => console.log("Monkfish bot launched"));
