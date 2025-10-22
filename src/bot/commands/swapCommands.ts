@@ -17,7 +17,7 @@ import { makeWalletService } from "../../core/services/wallet";
 import {
   getSolanaTokenPair,
   toDexTokenQuote,
-  resolveTokenMint,
+  resolveMintSmart,
   looksLikeMint,
   escapeHtml,
   underCooldown
@@ -42,98 +42,75 @@ export function registerSwapCommands(bot: Telegraf) {
    * Usage: /quote <tokenSymbolOrMint> <amountSOL>
    * Example: /quote USDC 0.5
    */
-  bot.command("quote", async (ctx) => {
-    try {
-      const text = (ctx.message as Message.TextMessage).text ?? "";
-      const [tokenRaw, amountRaw] = text.trim().split(/\s+/).slice(1);
+bot.command("quote", async (ctx) => {
+  try {
+    const text = (ctx.message as Message.TextMessage).text ?? "";
+    const [tokenRaw, amountRaw] = text.trim().split(/\s+/).slice(1);
 
-      // Basic args validation
-      if (!tokenRaw || !amountRaw) {
-        return ctx.reply("Usage: /quote <mintOrSymbol> <amountSOL>\nExample: /quote USDC 0.5");
-      }
-
-      // Optional: simple per-user cooldown to avoid hammering Dexscreener
-      if (underCooldown(`quote:${ctx.from!.id}`)) {
-        return ctx.reply("⏳ Slow down a sec…");
-      }
-
-      // Amount validation
-      const amountSOL = Number(amountRaw);
-      if (!Number.isFinite(amountSOL) || amountSOL <= 0) {
-        return ctx.reply("Amount must be a number greater than 0.");
-      }
-
-      // Resolve symbol → mint (if tokenRaw is already a mint, this keeps it)
-      const mint = looksLikeMint(tokenRaw) ? tokenRaw : resolveTokenMint(tokenRaw);
-      if (!looksLikeMint(mint)) {
-        return ctx.reply("Unknown token. Provide a known symbol (e.g., USDC) or a valid mint address.");
-      }
-
-      // (Optional) If your quote path truly requires a wallet, uncomment:
-      // await walletSvc.getOrCreateUserWallet(String(ctx.from!.id));
-
-      // UX: show loading while we fetch
-      const loading = await ctx.reply("🔍 Fetching live price…");
-
-      // Get best Solana pair from Dexscreener and normalize it
-      const pair = await getSolanaTokenPair(mint);
-      if (!pair) {
-        await ctx.telegram.editMessageText(
-          ctx.chat!.id,
-          loading.message_id,
-          undefined,
-          "❌ No price data found for that token."
-        );
-        return;
-      }
-
-      const q = toDexTokenQuote(pair);
-      if (!q) {
-        await ctx.telegram.editMessageText(
-          ctx.chat!.id,
-          loading.message_id,
-          undefined,
-          "❌ Invalid price data returned."
-        );
-        return;
-      }
-
-      // amountSOL / (SOL per token) = tokens out
-      const tokensOut = amountSOL / q.priceNative;
-
-      // VERY rough “impact” proxy: not a real slippage calc
-      const roughImpactPct =
-        q.liquidityUsd > 0 ? ((amountSOL * q.priceUsd) / q.liquidityUsd) * 100 : 0;
-
-      const sym = escapeHtml(q.symbol);
-      const tokIn = escapeHtml(tokenRaw);
-
-      const lines = [
-        `📊 <b>Real-Time Quote</b>`,
-        ``,
-        `💰 <b>Spend:</b> ${amountSOL} SOL`,
-        `📈 <b>Get:</b> ~${tokensOut.toFixed(2)} ${sym}`,
-        `💵 <b>Price:</b> $${q.priceUsd.toFixed(6)} per ${sym}`,
-        `📊 <b>Impact (rough):</b> ~${roughImpactPct.toFixed(2)}%`,
-        `💧 <b>Liquidity:</b> $${q.liquidityUsd.toLocaleString()}`,
-        `📅 <b>Volume 24h:</b> $${q.volume24hUsd.toLocaleString()}`,
-        ``,
-        `⚡ To execute: /swap ${tokIn} ${amountSOL}`,
-        ``,
-        `<i>Data via Dexscreener</i>`,
-      ].join("\n");
-
-      await ctx.telegram.editMessageText(
-        ctx.chat!.id,
-        loading.message_id,
-        undefined,
-        lines,
-        { parse_mode: "HTML" } // keep simple; omit disable_web_page_preview if it errors in your setup
-      );
-    } catch (e: any) {
-      await ctx.reply(e?.message || "Could not get a quote right now.");
+    if (!tokenRaw || !amountRaw) {
+      return ctx.reply("Usage: /quote <mintOrSymbol> <amountSOL>\nExample: /quote USDC 0.5");
     }
-  });
+    if (underCooldown(`quote:${ctx.from!.id}`)) {
+      return ctx.reply("⏳ Slow down a sec…");
+    }
+
+    const amountSOL = Number(amountRaw);
+    if (!Number.isFinite(amountSOL) || amountSOL <= 0) {
+      return ctx.reply("Amount must be a number greater than 0.");
+    }
+
+    // ✅ New: dynamic symbol→mint
+    const mint = await resolveMintSmart(tokenRaw);
+    if (!mint || !looksLikeMint(mint)) {
+      return ctx.reply("Unknown token. Try a known symbol (e.g., USDC, BONK) or a valid mint address.");
+    }
+
+    const loading = await ctx.reply("🔍 Fetching live price…");
+
+    const pair = await getSolanaTokenPair(mint);
+    if (!pair) {
+      await ctx.telegram.editMessageText(ctx.chat!.id, loading.message_id, undefined, "❌ No price data found.");
+      return;
+    }
+
+    const q = toDexTokenQuote(pair);
+    if (!q) {
+      await ctx.telegram.editMessageText(ctx.chat!.id, loading.message_id, undefined, "❌ Invalid price data returned.");
+      return;
+    }
+
+    const tokensOut = amountSOL / q.priceNative;
+    const roughImpactPct = q.liquidityUsd > 0 ? ((amountSOL * q.priceUsd) / q.liquidityUsd) * 100 : 0;
+
+    const sym = escapeHtml(q.symbol);
+    const tokIn = escapeHtml(tokenRaw);
+
+    const lines = [
+      `📊 <b>Real-Time Quote</b>`,
+      ``,
+      `💰 <b>Spend:</b> ${amountSOL} SOL`,
+      `📈 <b>Get:</b> ~${tokensOut.toFixed(2)} ${sym}`,
+      `💵 <b>Price:</b> $${q.priceUsd.toFixed(6)} per ${sym}`,
+      `📊 <b>Impact (rough):</b> ~${roughImpactPct.toFixed(2)}%`,
+      `💧 <b>Liquidity:</b> $${q.liquidityUsd.toLocaleString()}`,
+      `📅 <b>Volume 24h:</b> $${q.volume24hUsd.toLocaleString()}`,
+      ``,
+      `⚡ To execute: /swap ${tokIn} ${amountSOL}`,
+      ``,
+      `<i>Data via Dexscreener</i>`,
+    ].join("\n");
+
+    await ctx.telegram.editMessageText(
+      ctx.chat!.id,
+      loading.message_id,
+      undefined,
+      lines,
+      { parse_mode: "HTML" }
+    );
+  } catch (e: any) {
+    await ctx.reply(e?.message || "Could not get a quote right now.");
+  }
+});
 
 
   
