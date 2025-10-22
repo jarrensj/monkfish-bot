@@ -19,6 +19,9 @@ function assertTelegramId(id: unknown): asserts id is string {
   }
 }
 
+// TODO: Migrate to DB with proper wallet storage
+// Wallets table: { id, user_id (FK to Users), address, private_key_encrypted, created_at }
+// This allows proper relational queries, transactions, and secure key storage
 export class LocalDevWalletService implements IWalletService {
   // Generate a fake but deterministic Solana-like address for the user
   async getOrCreateUserWallet(telegramId: string): Promise<WalletRef> {
