@@ -7,11 +7,11 @@ import { keyValue } from "../../infra/keyValue";
 type Bot = Telegraf<Context>;
 
 // Current Terms of Service version
-const CURRENT_TOS_VERSION = "1.0";
+const CURRENT_TOS_VERSION = "1.0.0-beta";
 
 export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     // Helper function to check if user needs to accept/re-accept ToS
-    function needsToSAcceptance(tg: string): boolean {
+    function needsTosAcceptance(tg: string): boolean {
         const hasAgreed = keyValue.get<boolean>(`user:${tg}:tos_agreed`, false);
         if (!hasAgreed) return true;
         
@@ -23,7 +23,7 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     // Initial /start command - show welcome and ToS
     bot.start(async (ctx: Context) => {
         const tg = String(ctx.from!.id);
-        const needsAcceptance = needsToSAcceptance(tg);
+        const needsAcceptance = needsTosAcceptance(tg);
 
         if (!needsAcceptance) {
             // User already agreed to current ToS version, show main menu
@@ -83,7 +83,7 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
         try {
             const tg = String(ctx.from!.id);
 
-            if (needsToSAcceptance(tg)) {
+            if (needsTosAcceptance(tg)) {
                 await ctx.reply("Please accept the current Terms of Service first. Use /start to begin.");
                 return;
             }
@@ -109,7 +109,7 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
         try {
             const tg = String(ctx.from!.id);
 
-            if (needsToSAcceptance(tg)) {
+            if (needsTosAcceptance(tg)) {
                 await ctx.reply("Please accept the current Terms of Service first. Use /start to begin.");
                 return;
             }
@@ -127,7 +127,7 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
         try {
             const tg = String(ctx.from!.id);
 
-            if (needsToSAcceptance(tg)) {
+            if (needsTosAcceptance(tg)) {
                 await ctx.reply("Please accept the current Terms of Service first. Use /start to begin.");
                 return;
             }
