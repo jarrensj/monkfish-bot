@@ -1,26 +1,24 @@
 import type { IWalletService, WalletRef, Balances } from "./types";
-import { apiRequest } from "../../../infra/api";
 
-
-//  adapter Swap HTTP adapter implementing your existing ISwapService
+/**
+ * RestWalletService (stub for future Privy-backed backend)
+ * TODO(SECURITY): Implement real endpoints when koi backend exposes /wallets/* (Privy).
+ * For now, this throws because your backend doesn't provide these routes yet.
+ */
 export class RestWalletService implements IWalletService {
   constructor(private baseUrl: string) {
-    if (!/^https:\/\//i.test(baseUrl)) throw new Error("KOI_API_URL must be HTTPS");
+    // Allow http://localhost for dev; enforce HTTPS in prod when you wire this up.
   }
 
-  async getOrCreateUserWallet(telegramId: string): Promise<WalletRef> {
-    return apiRequest<WalletRef>(this.baseUrl, "/wallets/getOrCreate", {
-      method: "POST",
-      body: { telegramId },
-    });
+  async getOrCreateUserWallet(_telegramId: string): Promise<WalletRef> {
+    throw new Error("RestWalletService not wired: backend /wallets/getOrCreate not implemented.");
   }
 
-  async getBalances(walletId: string): Promise<Balances> {
-    return apiRequest<Balances>(this.baseUrl, `/wallets/${encodeURIComponent(walletId)}/balances`, { method: "GET" });
+  async getBalances(_walletId: string): Promise<Balances> {
+    throw new Error("RestWalletService not wired: backend /wallets/:id/balances not implemented.");
   }
 
-  async getAddress(walletId: string): Promise<string> {
-    const r = await apiRequest<{ address: string }>(this.baseUrl, `/wallets/${encodeURIComponent(walletId)}`, { method: "GET" });
-    return r.address;
+  async getAddress(_walletId: string): Promise<string> {
+    throw new Error("RestWalletService not wired: backend /wallets/:id not implemented.");
   }
 }

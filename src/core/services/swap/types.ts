@@ -1,25 +1,24 @@
-export type QuoteInput = {
-  /** Target token to BUY using SOL (symbol or mint) */
-  outToken: string;
-  /** Amount of SOL to spend */
+export type SwapInput = {
+  /** SPL mint address (base58, 32–44 chars). */
+  mint: string;
+  /** Exact-in amount in SOL. */
   amountSOL: number;
+  /** Optional: slippage (bps). If omitted, backend/env decides. */
+  slippageBps?: number;
+  /** Optional: priority fee in microlamports. If omitted, backend/env decides. */
+  priorityFee?: number;
 };
 
-export type QuoteResult = {
-  inToken: "SOL";
-  outToken: string;     // resolved mint address
-  outSymbol: string;    // resolved ticker/symbol
-  amountSOL: number;
-  estimatedOut: number; // mock estimate for now
-  priceImpactPct: number; // mock placeholder
-  routeNote?: string;
+export type SwapResult = {
+  /** Solana transaction signature (for Solscan). */
+  txId: string;
+  /** Estimated out amount in human units (if provided by backend). */
+  estimatedOut?: number;
+  /** Raw backend payload for debugging or future UI. */
+  raw?: any;
 };
 
 export interface ISwapService {
-  /** Resolve a symbol or a mint to a canonical mint + symbol */
-  resolveToken(input: string): Promise<{ mint: string; symbol: string }>;
-  /** Return an estimated OUT amount for a SOL spend (mock for now) */
-  quote(input: QuoteInput): Promise<QuoteResult>;
-  /** Execute a plain swap (mock tx id for now) */
-  swap(input: QuoteInput & { walletId: string }): Promise<{ txId: string; note?: string }>;
+  /** Execute a live SOL -> SPL token swap. */
+  swap(input: SwapInput): Promise<SwapResult>;
 }
