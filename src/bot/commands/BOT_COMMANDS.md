@@ -59,8 +59,6 @@ wbtc:base
 
 
 
-
-
 Notes (quick)
 
 • Amount is the native input for the detected chain (e.g., SOL on Solana).

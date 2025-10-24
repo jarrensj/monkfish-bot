@@ -136,4 +136,5 @@ export function registerWalletCommands(bot: Bot) {
       await ctx.reply("❌ <b>Couldn't fetch your balance</b>. Please try again shortly.", { parse_mode: "HTML", link_preview_options: { is_disabled: true } });
     }
   });
+  
 }
