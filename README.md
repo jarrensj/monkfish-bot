@@ -3,10 +3,26 @@
 Telegram bot for toggling koi-fish algos and managing allocations.
 
 ## Quick Start
-1. `cp .env.example .env` and set `TELEGRAM_BOT_TOKEN`.
-2. `npm run dev` (or `npm run start` in prod).
+1. Set up Supabase database
+2. Create `.env` file with required credentials:
+   - `TELEGRAM_BOT_TOKEN` — Bot token from [BotFather](https://t.me/botfather)
+   - `SUPABASE_URL` — Your Supabase project URL
+   - `SUPABASE_ANON_KEY` — Your Supabase anon key
+3. Run the database migration from `migrations/001_initial_schema.sql`
+4. `npm install`
+5. `npm run dev`
 
-## Env
+
+## Environment Variables
+
+### Required
 - `TELEGRAM_BOT_TOKEN` — Bot token from [BotFather](https://t.me/botfather) on Telegram
-- `KOI_API_URL`   -  koi-fish API base URL (can be mocked)
+- `SUPABASE_URL` — Your Supabase project URL
+- `SUPABASE_ANON_KEY` — Your Supabase project's anonymous key
+
+### Optional
+- `KOI_API_URL` — koi-fish API base URL (default: `http://localhost:3001`)
+- `KOI_API_KEY` — API key for backend authentication
+- `WALLET_MODE` — Wallet service mode: `development` (default) or `http`
+- `LOGGING_WEBHOOK_URL` — Webhook URL for message logging
 
