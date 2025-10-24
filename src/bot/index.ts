@@ -8,7 +8,7 @@ import { loggingMiddleware, userInit } from "./middleware";
 import { registerHealthCommands } from "./commands/healthCommands";
 import { registerSwapCommands } from "./commands/swapCommands";
 import { registerAlgoCommands } from "./commands/algoCommands";
-
+import { registerHelpCommands } from "./commands/helpCommands";
 
 // Verify bot token is configured
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -27,6 +27,7 @@ if (!loggingWebhookUrl) {
 const bot = new Telegraf(token);
 
 // Apply middleware (order matters: init user → logging, etc.)
+registerHelpCommands(bot); //public
 bot.use(userInit);
 bot.use(loggingMiddleware());
 
