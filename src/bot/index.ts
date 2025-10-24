@@ -7,6 +7,8 @@ import { registerTosCommands } from "./commands/tosCommands";
 import { loggingMiddleware, userInit } from "./middleware";
 import { registerHealthCommands } from "./commands/healthCommands";
 import { registerSwapCommands } from "./commands/swapCommands";
+import { registerAlgoCommands } from "./commands/algoCommands";
+
 
 // Verify bot token is configured
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -33,6 +35,8 @@ registerTosCommands(bot);
 registerHealthCommands(bot);
 registerWalletCommands(bot);
 registerSwapCommands(bot);
+registerAlgoCommands(bot);
+
 
 // Start bot and setup graceful shutdown
 bot

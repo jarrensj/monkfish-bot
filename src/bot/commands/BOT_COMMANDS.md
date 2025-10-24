@@ -1,3 +1,16 @@
+## WALLET — examples
+
+```
+/ping
+/start
+/startwallet
+/tos-accept
+/agree
+/cancel
+/deposit
+/balance
+```
+
 ## QUOTE — examples
 
 ```
@@ -33,6 +46,20 @@ usdc
 usdc:sol
 wbtc:base
 ```
+
+## ALGO — examples
+
+```
+/algos — list available algos (from backend)
+/allocations — show your current algo allocations
+/algo_enable <ALGO_CODE> <amountSOL> — enable/allocate
+/algo_disable <ALGO_CODE> <amountSOL> — disable/deallocate (or set to 0 if your backend treats it that way)
+
+```
+
+
+
+
 
 Notes (quick)
 

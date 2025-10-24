@@ -202,6 +202,7 @@ export class KoiApi {
       { method: "POST", body: JSON.stringify(body), koiMeta: { ...meta, command: "allocations" } }
     );
   }
+
 }
 
 export const koiApi = new KoiApi();
