@@ -160,13 +160,8 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
             await ctx.reply(
                 [
                     "💰 <b>Koi (server) wallet</b>",
-<<<<<<< HEAD
                     `Address: <code>${escHtml(r.address || "n/a")}</code>`,
                     `SOL: ${escHtml(sol)}`
-=======
-                    `Address: <code>${r.address || "n/a"}</code>`,
-                    `SOL: ${sol}`,
->>>>>>> 6a3115cbe2e0303fe12beab1dc6495d779be6c2a
                 ].join("\n"),
                 {
                     parse_mode: "HTML",
