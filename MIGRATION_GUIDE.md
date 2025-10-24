@@ -15,9 +15,10 @@ The bot has been migrated from a local JSON file storage system to Supabase (Pos
 
 ## Before You Start
 
-1. ✅ Complete the Supabase setup (see [SETUP.md](./SETUP.md))
-2. ✅ Run the database migration (`migrations/001_initial_schema.sql`)
-3. ✅ Backup your existing `keyValue.json` file (usually in `.data/keyValue.json`)
+1. ✅ Complete the Supabase setup
+2. ✅ Get your `SUPABASE_SERVICE_ROLE_KEY` (not the anon key!) from Supabase dashboard
+3. ✅ Run the database migration (`migrations/001_initial_schema.sql`)
+4. ✅ Backup your existing `keyValue.json` file (usually in `.data/keyValue.json`)
 
 ## Understanding the Data Structure Change
 
