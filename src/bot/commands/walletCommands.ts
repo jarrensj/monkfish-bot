@@ -9,6 +9,10 @@ type Bot = Telegraf<Context>;
 // Current Terms of Service version
 const CURRENT_TOS_VERSION = "1.0.0-beta";
 
+function escHtml(s: string) {
+    return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+}
+
 // Backend KOI_API_URL (dev-friendly default)
 // NOTE: For production, use HTTPS and a real domain.
 // TODO(SECURITY): Add KOI_API_KEY bearer on the backend and send it from the bot.
@@ -166,9 +170,9 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
             const sol = typeof r.SOL === "number" ? r.SOL.toFixed(6) : "n/a";
             await ctx.reply(
                 [
-                    "💰 *Koi (server) wallet*",
-                    `Address: \`${r.address || "n/a"}\``,
-                    `SOL: ${sol}`,
+                    "💰 <b>Koi (server) wallet</b>",
+                    `Address: <code>${escHtml(r.address || "n/a")}</code>`,
+                    `SOL: ${escHtml(sol)}`
                 ].join("\n"),
                 {
                     parse_mode: "HTML",
