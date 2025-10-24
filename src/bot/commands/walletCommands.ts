@@ -31,11 +31,6 @@ async function getServerBalance(): Promise<{ ok: boolean; address?: string; SOL?
 }
 
 /**
- * ✅ MIGRATED: Now uses Supabase DB with proper wallet storage
- * Wallets table: { id, user_telegram_id (FK to Users), address, private_key_encrypted, created_at }
- * Users table: { telegram_id, tos_agreed, tos_version, tos_agreed_at, created_at, updated_at }
- * This allows proper relational queries, transactions, and secure key storage
- *
  * NOTE: For now we use a local/dev wallet service that returns a fake but stable address per user,
  * just so /start_wallet and /deposit flows are functional during development.
  * Replace with Privy-backed REST in WALLET_MODE=http once backend routes exist.

@@ -47,10 +47,25 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wallets ENABLE ROW LEVEL SECURITY;
 
 -- Create policies (adjust based on your security requirements)
--- For now, allow service role to access everything
-CREATE POLICY "Service role can access all users" ON users
-  FOR ALL USING (true);
+-- Only allow service_role (backend) to access
+CREATE POLICY "Backend service role only" ON users
+  FOR ALL 
+  TO service_role
+  USING (true);
 
-CREATE POLICY "Service role can access all wallets" ON wallets
-  FOR ALL USING (true);
+CREATE POLICY "Backend service role only" ON wallets
+  FOR ALL
+  TO service_role  
+  USING (true);
+
+-- Explicitly deny anon role
+CREATE POLICY "Deny anon access to users" ON users
+  FOR ALL
+  TO anon
+  USING (false);
+
+CREATE POLICY "Deny anon access to wallets" ON wallets
+  FOR ALL
+  TO anon
+  USING (false);
 
