@@ -46,17 +46,19 @@ CREATE TRIGGER update_users_updated_at
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wallets ENABLE ROW LEVEL SECURITY;
 
--- Create policies (adjust based on your security requirements)
--- Only allow service_role (backend) to access
-CREATE POLICY "Backend service role only" ON users
+-- Create policies for backend service role access only
+-- Service role bypasses RLS, but these policies explicitly secure the tables
+CREATE POLICY "Backend service role only - users" ON users
   FOR ALL 
   TO service_role
-  USING (true);
+  USING (true)
+  WITH CHECK (true);
 
-CREATE POLICY "Backend service role only" ON wallets
+CREATE POLICY "Backend service role only - wallets" ON wallets
   FOR ALL
   TO service_role  
-  USING (true);
+  USING (true)
+  WITH CHECK (true);
 
 -- Explicitly deny anon role
 CREATE POLICY "Deny anon access to users" ON users
