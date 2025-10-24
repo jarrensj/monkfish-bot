@@ -1,23 +1,17 @@
 /**
- * Swap Commands (Solana-onl)
+ * Swap Commands (Solana-only)
  * - /swap <mint> <amountSOL>  → executes swap via backend Cadence route
  */
 
 import type { Telegraf } from "telegraf";
-import type { Message } from "telegraf/types";
 import { message } from "telegraf/filters";
 import { makeSwapService } from "../../core/services/swap";
+import { looksLikeMint, isTextMessage } from "./utils";
 
 const MAX_TOKEN_INPUT_LEN = 64;
 const swapSvc = makeSwapService();
 
-// helpers
-function isTextMessage(m: unknown): m is Message.TextMessage {
-  return !!(m && typeof (m as any).text === "string");
-}
-function looksLikeMint(s: string) {
-  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(s);
-}
+
 function escHtml(s: string) {
   return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 }
@@ -26,7 +20,7 @@ export function registerSwapCommands(bot: Telegraf) {
   // /swap <mint> <amountSOL>
   bot.command("swap", async (ctx) => {
     try {
-      if (!isTextMessage(ctx.message)) return;
+      if (!isTextMessage(ctx)) return;
       const parts = ctx.message.text.trim().split(/\s+/);
       const mint = parts[1];
       const amountRaw = parts[2];

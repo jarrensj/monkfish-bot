@@ -86,6 +86,7 @@ export function escapeHtml(s: string): string {
   return s.replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]!));
 }
 
+
 /** Simple per-key cooldown to avoid spammy calls */
 const lastCall = new Map<string, number>();
 export function underCooldown(key: string, ms = 1500): boolean {

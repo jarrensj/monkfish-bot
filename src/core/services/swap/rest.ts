@@ -49,6 +49,10 @@ export class CadenceSwapService implements ISwapService {
     // Set this env to the backend signer pubkey (base58) for now.
     // Later, when using Privy per-user wallets, this should be the user's wallet.
     const public_wallet = (process.env.BOT_PUBLIC_WALLET || "").trim() || "server";
+    if (!public_wallet) {
+      // TODO(Privy): replace with the user's wallet once auth is wired.
+      throw new Error("BOT_PUBLIC_WALLET env is required for swaps in this build.");
+    }
 
     const payload = {
       public_wallet,            // <— added

@@ -37,6 +37,17 @@ registerWalletCommands(bot, wallet);
 registerSwapCommands(bot);
 
 // Start bot and setup graceful shutdown
-bot.launch().then(() => console.log("Monkfish bot launched"));
+bot.launch()
+  .then(() => console.log("Monkfish bot launched"))
+  .catch((err) => {
+    console.error("Failed to launch bot:", err);
+    process.exitCode = 1;
+  });
+
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
+
+// Optional: surface unhandled rejections in dev
+process.on("unhandledRejection", (e) => {
+  console.error("UnhandledRejection:", e);
+});
