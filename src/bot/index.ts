@@ -6,6 +6,8 @@ import { makeWalletService } from "../core/services/wallet";
 import { registerWalletCommands } from "./commands/walletCommands";
 import { registerUtilCommands } from "./commands/utils";
 import { loggingMiddleware } from "./middleware/logging";
+import { registerSwapCommands } from "./commands/swapCommands";
+
 
 // Verify bot token is configured
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -32,8 +34,20 @@ bot.use(loggingMiddleware());
 // Register all command groups
 registerUtilCommands(bot);
 registerWalletCommands(bot, wallet);
+registerSwapCommands(bot);
 
 // Start bot and setup graceful shutdown
-bot.launch().then(() => console.log("Monkfish bot launched"));
+bot.launch()
+  .then(() => console.log("Monkfish bot launched"))
+  .catch((err) => {
+    console.error("Failed to launch bot:", err);
+    process.exitCode = 1;
+  });
+
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
+
+// Optional: surface unhandled rejections in dev
+process.on("unhandledRejection", (e) => {
+  console.error("UnhandledRejection:", e);
+});
