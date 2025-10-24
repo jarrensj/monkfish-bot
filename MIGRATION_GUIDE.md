@@ -91,7 +91,7 @@ Cleanup
 // Verification script (no migration). Confirms Supabase connectivity and prints basic stats.
 
 import "dotenv/config";
-import { getSupabaseClient } from "../src/infra/db/supabase"; // adjust path if different
+import { getSupabaseClient } from "../src/infra/database"; // adjust path if different
 
 async function main() {
   try {
