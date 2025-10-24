@@ -1,6 +1,7 @@
 // Wallet-related bot commands (start, deposit, balance)
 import type { Telegraf, Context } from "telegraf";
 import { logErr } from "./utils";
+import { logErr } from "./utils";
 import type { IWalletService } from "../../core/services/wallet/types";
 import { userDb } from "../../infra/database";
 
@@ -63,6 +64,7 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
             const greeting = isUpdate
                 ? "📋 Our Terms of Service have been updated!\n\n"
                 : "Welcome to Monkfish 🐟\n\n";
+
 
             await ctx.reply(
                 greeting +
@@ -127,6 +129,11 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
      * - When WALLET_MODE=http and backend has /wallets/* routes,
      *   this should return the user's real deposit address (not a fake dev one).
      */
+    /**
+     * TODO: Connect to wallet on Privy (backend koi-fish)
+     * - When WALLET_MODE=http and backend has /wallets/* routes,
+     *   this should return the user's real deposit address (not a fake dev one).
+     */
     bot.command("deposit", async (ctx: Context) => {
         try {
             const tg = String(ctx.from!.id);
@@ -144,6 +151,14 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
         }
     });
 
+    /**
+     * TODO: Update to point to Privy user wallets once integrated.
+     * For now, /balance calls a backend helper route that reports the server's signer wallet balance
+     * (the wallet currently used by cadence-trader on your backend).
+     *
+     * TODO(SECURITY): Protect /api/tg/wallet/balance with KOI_API_KEY on backend and send it here.
+     */
+    bot.command("balance", async (ctx) => {
     /**
      * TODO: Update to point to Privy user wallets once integrated.
      * For now, /balance calls a backend helper route that reports the server's signer wallet balance
@@ -171,7 +186,26 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
                 }
             );
         } catch (err: any) {
+            const r = await getServerBalance();
+            if (!r.ok) return ctx.reply(`Couldn't fetch balance: ${r.error || "unknown error"}`);
+
+            const sol = typeof r.SOL === "number" ? r.SOL.toFixed(6) : "n/a";
+            await ctx.reply(
+                [
+                    "💰 <b>Koi (server) wallet</b>",
+                    `Address: <code>${escHtml(r.address || "n/a")}</code>`,
+                    `SOL: ${escHtml(sol)}`
+                ].join("\n"),
+                {
+                    parse_mode: "HTML",
+                    // ❌ disable_web_page_preview: true,
+                    // ✅ use link_preview_options instead
+                    link_preview_options: { is_disabled: true },
+                }
+            );
+        } catch (err: any) {
             await ctx.reply("Couldn't fetch your balance right now. Please try again.");
         }
     });
 }
+
