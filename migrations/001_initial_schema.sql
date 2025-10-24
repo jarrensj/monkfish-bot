@@ -1,7 +1,8 @@
--- Monkfish Bot Database Schema
--- Run this in your Supabase SQL editor to create the necessary tables
+-- ===========================================
+-- Monkfish Bot DB — Privy-aligned schema
+-- ===========================================
 
--- Users table: stores Telegram user info and ToS acceptance
+-- Users table (unchanged)
 CREATE TABLE IF NOT EXISTS users (
   telegram_id TEXT PRIMARY KEY,
   tos_agreed BOOLEAN NOT NULL DEFAULT FALSE,
@@ -11,22 +12,71 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Wallets table: stores user wallet information
+-- Wallets table (create if missing; legacy column kept but deprecated)
 CREATE TABLE IF NOT EXISTS wallets (
   id TEXT PRIMARY KEY,
   user_telegram_id TEXT NOT NULL REFERENCES users(telegram_id) ON DELETE CASCADE,
   address TEXT NOT NULL,
-  private_key_encrypted TEXT,
+  private_key_encrypted TEXT, -- DEPRECATED: do not store user private keys
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Create index on user_telegram_id for faster lookups
-CREATE INDEX IF NOT EXISTS idx_wallets_user_telegram_id ON wallets(user_telegram_id);
+-- ========= MIGRATIONS / ADDITIVE CHANGES =========
 
--- Create unique index on address for data integrity
+-- Add provider/chain metadata (idempotent ADDs)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='wallets' AND column_name='provider'
+  ) THEN
+    ALTER TABLE wallets ADD COLUMN provider TEXT NOT NULL DEFAULT 'privy';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='wallets' AND column_name='provider_wallet_id'
+  ) THEN
+    ALTER TABLE wallets ADD COLUMN provider_wallet_id TEXT;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='wallets' AND column_name='chain'
+  ) THEN
+    ALTER TABLE wallets ADD COLUMN chain TEXT NOT NULL DEFAULT 'sol';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name='wallets' AND column_name='updated_at'
+  ) THEN
+    ALTER TABLE wallets ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+  END IF;
+END $$;
+
+-- Document deprecated column
+COMMENT ON COLUMN wallets.private_key_encrypted IS
+  'DEPRECATED: do not store user private keys; use provider-backed wallets (e.g., Privy).';
+
+-- ========= INDEXES =========
+
+-- Existing indexes (idempotent)
+CREATE INDEX IF NOT EXISTS idx_wallets_user_telegram_id ON wallets(user_telegram_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_wallets_address ON wallets(address);
 
--- Create function to update updated_at timestamp
+-- One wallet per chain per user (recommended if your model expects this)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_wallets_user_chain
+  ON wallets(user_telegram_id, chain);
+
+-- Unique provider reference when present (avoids duplicates per provider)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_wallets_provider_ref
+  ON wallets(provider, provider_wallet_id)
+  WHERE provider_wallet_id IS NOT NULL;
+
+-- ========= TRIGGERS: updated_at =========
+
+-- Shared trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -35,39 +85,58 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger to automatically update updated_at on users table
+-- Ensure users table has trigger
 DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at
   BEFORE UPDATE ON users
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at_column();
 
--- Enable Row Level Security (RLS)
+-- Add same trigger to wallets
+DROP TRIGGER IF EXISTS update_wallets_updated_at ON wallets;
+CREATE TRIGGER update_wallets_updated_at
+  BEFORE UPDATE ON wallets
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- ========= RLS =========
+
+-- Enable Row Level Security (service_role still bypasses)
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wallets ENABLE ROW LEVEL SECURITY;
 
--- Create policies for backend service role access only
--- Service role bypasses RLS, but these policies explicitly secure the tables
-CREATE POLICY "Backend service role only - users" ON users
-  FOR ALL 
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
+-- Service role policies (explicit allow; service_role bypasses anyway)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'users' AND policyname = 'Backend service role only - users'
+  ) THEN
+    CREATE POLICY "Backend service role only - users" ON users
+      FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
 
-CREATE POLICY "Backend service role only - wallets" ON wallets
-  FOR ALL
-  TO service_role  
-  USING (true)
-  WITH CHECK (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'wallets' AND policyname = 'Backend service role only - wallets'
+  ) THEN
+    CREATE POLICY "Backend service role only - wallets" ON wallets
+      FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 -- Explicitly deny anon role
-CREATE POLICY "Deny anon access to users" ON users
-  FOR ALL
-  TO anon
-  USING (false);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'users' AND policyname = 'Deny anon access to users'
+  ) THEN
+    CREATE POLICY "Deny anon access to users" ON users
+      FOR ALL TO anon USING (false);
+  END IF;
 
-CREATE POLICY "Deny anon access to wallets" ON wallets
-  FOR ALL
-  TO anon
-  USING (false);
-
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'wallets' AND policyname = 'Deny anon access to wallets'
+  ) THEN
+    CREATE POLICY "Deny anon access to wallets" ON wallets
+      FOR ALL TO anon USING (false);
+  END IF;
+END $$;
