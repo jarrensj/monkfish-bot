@@ -26,6 +26,26 @@ export function getSupabaseClient(): SupabaseClient {
   return supabase;
 }
 
+(async () => {
+  try {
+    // Ensure env is loaded before this file is imported:
+    // import "dotenv/config" should run in your main entry first.
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.from("users").select("telegram_id").limit(1);
+    if (error) {
+      console.error("[supabase] RLS/Key check failed:", error);
+      throw new Error(
+        "Supabase client is NOT using service_role. Set SUPABASE_SERVICE_ROLE_KEY."
+      );
+    }
+    console.log("[supabase] RLS/Key check OK (service_role active)");
+  } catch (e) {
+    console.error(e);
+    process.exit(1); // fail fast
+  }
+})();
+
+
 // Database types
 export interface DbUser {
   telegram_id: string;
@@ -58,4 +78,3 @@ export interface DbWalletInsert {
   address: string;
   private_key_encrypted?: string | null;
 }
-
