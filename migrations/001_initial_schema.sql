@@ -1,0 +1,73 @@
+-- Monkfish Bot Database Schema
+-- Run this in your Supabase SQL editor to create the necessary tables
+
+-- Users table: stores Telegram user info and ToS acceptance
+CREATE TABLE IF NOT EXISTS users (
+  telegram_id TEXT PRIMARY KEY,
+  tos_agreed BOOLEAN NOT NULL DEFAULT FALSE,
+  tos_version TEXT,
+  tos_agreed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Wallets table: stores user wallet information
+CREATE TABLE IF NOT EXISTS wallets (
+  id TEXT PRIMARY KEY,
+  user_telegram_id TEXT NOT NULL REFERENCES users(telegram_id) ON DELETE CASCADE,
+  address TEXT NOT NULL,
+  private_key_encrypted TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Create index on user_telegram_id for faster lookups
+CREATE INDEX IF NOT EXISTS idx_wallets_user_telegram_id ON wallets(user_telegram_id);
+
+-- Create unique index on address for data integrity
+CREATE UNIQUE INDEX IF NOT EXISTS idx_wallets_address ON wallets(address);
+
+-- Create function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to automatically update updated_at on users table
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+CREATE TRIGGER update_users_updated_at
+  BEFORE UPDATE ON users
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE wallets ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for backend service role access only
+-- Service role bypasses RLS, but these policies explicitly secure the tables
+CREATE POLICY "Backend service role only - users" ON users
+  FOR ALL 
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY "Backend service role only - wallets" ON wallets
+  FOR ALL
+  TO service_role  
+  USING (true)
+  WITH CHECK (true);
+
+-- Explicitly deny anon role
+CREATE POLICY "Deny anon access to users" ON users
+  FOR ALL
+  TO anon
+  USING (false);
+
+CREATE POLICY "Deny anon access to wallets" ON wallets
+  FOR ALL
+  TO anon
+  USING (false);
+

@@ -2,7 +2,7 @@
 import type { Telegraf, Context } from "telegraf";
 import { logErr } from "./utils";
 import type { IWalletService } from "../../core/services/wallet/types";
-import { keyValue } from "../../infra/keyValue";
+import { userDb } from "../../infra/database";
 
 type Bot = Telegraf<Context>;
 
@@ -31,29 +31,20 @@ async function getServerBalance(): Promise<{ ok: boolean; address?: string; SOL?
 }
 
 /**
- * TODO: Migrate to DB with proper wallet storage
- * Wallets table: { id, user_id (FK to Users), address, private_key_encrypted, created_at }
- * This allows proper relational queries, transactions, and secure key storage
- *
  * NOTE: For now we use a local/dev wallet service that returns a fake but stable address per user,
  * just so /start_wallet and /deposit flows are functional during development.
  * Replace with Privy-backed REST in WALLET_MODE=http once backend routes exist.
  */
 export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     // Helper function to check if user needs to accept/re-accept ToS
-    function needsTosAcceptance(tg: string): boolean {
-        const hasAgreed = keyValue.get<boolean>(`user:${tg}:tos_agreed`, false);
-        if (!hasAgreed) return true;
-
-        // Check if user's ToS version matches current version
-        const userTosVersion = keyValue.get<string>(`user:${tg}:tos_version`);
-        return userTosVersion !== CURRENT_TOS_VERSION;
+    async function needsTosAcceptance(tg: string): Promise<boolean> {
+        return await userDb.needsTosAcceptance(tg, CURRENT_TOS_VERSION);
     }
 
     // Initial /start command - show welcome and ToS
     bot.start(async (ctx: Context) => {
         const tg = String(ctx.from!.id);
-        const needsAcceptance = needsTosAcceptance(tg);
+        const needsAcceptance = await needsTosAcceptance(tg);
 
         if (!needsAcceptance) {
             // User already agreed to current ToS version, show main menu
@@ -66,12 +57,13 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
             );
         } else {
             // First time user or ToS version updated - show ToS
-            const userTosVersion = keyValue.get<string>(`user:${tg}:tos_version`);
-            const isUpdate = userTosVersion && userTosVersion !== CURRENT_TOS_VERSION;
+            const user = await userDb.getUser(tg);
+            const isUpdate = user?.tos_version && user.tos_version !== CURRENT_TOS_VERSION;
 
             const greeting = isUpdate
                 ? "📋 Our Terms of Service have been updated!\n\n"
                 : "Welcome to Monkfish 🐟\n\n";
+
 
             await ctx.reply(
                 greeting +
@@ -87,19 +79,17 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
 
     // User agrees to ToS
     bot.command("agree", async (ctx: Context) => {
-        const tg = String(ctx.from!.id);
-        const agreedAt = new Date().toISOString();
+        try {
+            const tg = String(ctx.from!.id);
+            const agreedAt = new Date().toISOString();
 
-        /**
-         * TODO: Migrate to DB - Store as single user record with ToS fields
-         * Instead of 3 separate KV entries, should be:
-         * Users table: { telegram_id, tos_agreed, tos_version, tos_agreed_at, created_at, updated_at }
-         */
-        keyValue.set(`user:${tg}:tos_agreed`, true);
-        keyValue.set(`user:${tg}:tos_version`, CURRENT_TOS_VERSION);
-        keyValue.set(`user:${tg}:tos_agreed_at`, agreedAt);
+            await userDb.updateTosAcceptance(tg, CURRENT_TOS_VERSION, agreedAt);
 
-        await ctx.reply("✅ Terms accepted!\n\nNow use /start_wallet to create your wallet.");
+            await ctx.reply("✅ Terms accepted!\n\nNow use /start_wallet to create your wallet.");
+        } catch (err) {
+            logErr("ToS acceptance failed", err, { tg: String(ctx.from!.id) });
+            await ctx.reply("Something went wrong. Please try again.");
+        }
     });
 
     // User declines ToS
@@ -112,7 +102,7 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
         try {
             const tg = String(ctx.from!.id);
 
-            if (needsTosAcceptance(tg)) {
+            if (await needsTosAcceptance(tg)) {
                 await ctx.reply("Please accept the current Terms of Service first. Use /start to begin.");
                 return;
             }
@@ -142,7 +132,7 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
         try {
             const tg = String(ctx.from!.id);
 
-            if (needsTosAcceptance(tg)) {
+            if (await needsTosAcceptance(tg)) {
                 await ctx.reply("Please accept the current Terms of Service first. Use /start to begin.");
                 return;
             }
@@ -186,3 +176,4 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
         }
     });
 }
+

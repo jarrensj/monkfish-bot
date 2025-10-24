@@ -1,7 +1,7 @@
 import type { IWalletService, WalletRef, Balances } from "./types";
-import { keyValue } from "../../../infra/keyValue";
+import { walletDb, userDb } from "../../../infra/database";
 
-// Simple, deterministic “fake” Solana-looking address for dev
+// Simple, deterministic "fake" Solana-looking address for dev
 function makeFakeAddressFromTg(tg: string): string {
   // Real Solana addresses are base58 (32–44). This is clearly fake but stable.
   return `FAKE${tg.padStart(39, "0").slice(0, 39)}`;
@@ -9,21 +9,45 @@ function makeFakeAddressFromTg(tg: string): string {
 
 /**
  * LocalDevWalletService
- * - Persists 1 fake address per Telegram user in keyValue
+ * - Persists 1 fake address per Telegram user in Supabase
  * - getBalances returns 0 (no RPC call)
  * - This is just to keep /start_wallet and /deposit flows alive until Privy
  */
 export class LocalDevWalletService implements IWalletService {
   async getOrCreateUserWallet(telegramId: string): Promise<WalletRef> {
-    const key = `user:${telegramId}:walletId`;
-    let walletId = keyValue.get<string>(key);
-    if (!walletId) {
-      walletId = `w_${telegramId}`;
-      keyValue.set(key, walletId);
-      keyValue.set(`wallet:${walletId}:address`, makeFakeAddressFromTg(telegramId));
+    try {
+      // Ensure user exists in database (with default ToS values)
+      const user = await userDb.getUser(telegramId);
+      if (!user) {
+        await userDb.upsertUser({
+          telegram_id: telegramId,
+          tos_agreed: false,
+          tos_version: null,
+          tos_agreed_at: null,
+        });
+      }
+
+      // Check if wallet exists
+      let wallet = await walletDb.getWalletByUserId(telegramId);
+      
+      if (!wallet) {
+        // Create new wallet
+        const walletId = `w_${telegramId}`;
+        const address = makeFakeAddressFromTg(telegramId);
+        
+        wallet = await walletDb.createWallet({
+          id: walletId,
+          user_telegram_id: telegramId,
+          address,
+          private_key_encrypted: null,
+        });
+      }
+
+      return { walletId: wallet.id, address: wallet.address };
+    } catch (err) {
+      console.error('[LocalDevWalletService] getOrCreateUserWallet error:', err);
+      throw new Error('Failed to get or create user wallet');
     }
-    const address = keyValue.get<string>(`wallet:${walletId}:address`, makeFakeAddressFromTg(telegramId));
-    return { walletId, address };
   }
 
   async getBalances(_walletId: string): Promise<Balances> {
@@ -32,6 +56,13 @@ export class LocalDevWalletService implements IWalletService {
   }
 
   async getAddress(walletId: string): Promise<string> {
-    return keyValue.get<string>(`wallet:${walletId}:address`, "");
+    try {
+      const wallet = await walletDb.getWallet(walletId);
+      return wallet?.address || "";
+    } catch (err) {
+      console.error('[LocalDevWalletService] getAddress error:', err);
+      return "";
+    }
   }
 }
+
