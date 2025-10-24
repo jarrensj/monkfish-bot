@@ -38,13 +38,7 @@ async function getServerBalance(): Promise<{ ok: boolean; address?: string; SOL?
 export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
     // Helper function to check if user needs to accept/re-accept ToS
     async function needsTosAcceptance(tg: string): Promise<boolean> {
-        try {
-            return await userDb.needsTosAcceptance(tg, CURRENT_TOS_VERSION);
-        } catch (err) {
-            console.error('[walletCommands] needsTosAcceptance error:', err);
-            // On error, require ToS acceptance to be safe
-            return true;
-        }
+        return await userDb.needsTosAcceptance(tg, CURRENT_TOS_VERSION);
     }
 
     // Initial /start command - show welcome and ToS
@@ -64,7 +58,7 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
         } else {
             // First time user or ToS version updated - show ToS
             const user = await userDb.getUser(tg);
-            const isUpdate = user && user.tos_version && user.tos_version !== CURRENT_TOS_VERSION;
+            const isUpdate = user?.tos_version && user.tos_version !== CURRENT_TOS_VERSION;
 
             const greeting = isUpdate
                 ? "📋 Our Terms of Service have been updated!\n\n"
@@ -88,10 +82,6 @@ export function registerWalletCommands(bot: Bot, wallet: IWalletService) {
             const tg = String(ctx.from!.id);
             const agreedAt = new Date().toISOString();
 
-            /**
-             * ✅ MIGRATED: Store as single user record with ToS fields in Supabase
-             * Users table: { telegram_id, tos_agreed, tos_version, tos_agreed_at, created_at, updated_at }
-             */
             await userDb.updateTosAcceptance(tg, CURRENT_TOS_VERSION, agreedAt);
 
             await ctx.reply("✅ Terms accepted!\n\nNow use /start_wallet to create your wallet.");
