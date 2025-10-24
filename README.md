@@ -22,7 +22,4 @@ Telegram bot for toggling koi-fish algos and managing allocations.
 
 ### Optional
 - `KOI_API_URL` — koi-fish API base URL (default: `http://localhost:3001`)
-- `KOI_API_KEY` — API key for backend authentication
-- `WALLET_MODE` — Wallet service mode: `development` (default) or `http`
 - `LOGGING_WEBHOOK_URL` — Webhook URL for message logging
-
